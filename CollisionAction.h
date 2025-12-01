@@ -5,13 +5,13 @@
 #include "AngleCalc.h"
 #include "constants.h"
 
-void clusterDetectAndHandle(int startRow, int startCol, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount);
-bool placeNearestNeighborAndHandle(int row, int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed);
-bool fallbackColumnPlace(int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed);
-bool placeAtTopIfReached(sf::Vector2f &position, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, bool &ballActive);
+void clusterDetectAndHandle(int startRow, int startCol, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, int &score);
+bool placeNearestNeighborAndHandle(int row, int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed, int &score);
+bool fallbackColumnPlace(int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed, int &score);
+bool placeAtTopIfReached(sf::Vector2f &position, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, bool &ballActive, int &score);
 
 
-void clusterDetectAndHandle(int startR, int startC, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount) {
+void clusterDetectAndHandle(int startR, int startC, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount, int &score) {
     int toRemove[MAX_ROWS][MAX_COLS];
     for (int r = 0; r < MAX_ROWS; r++) {
         for (int c = 0; c < MAX_COLS; c++) {
@@ -56,6 +56,8 @@ void clusterDetectAndHandle(int startR, int startC, sf::Sprite bubbleGrid[MAX_RO
                 if (toRemove[r][c]) occupied[r][c] = false;
             }
         }
+        // increment score by number of removed bubbles
+        score += members;
         int highest = 0;
         for (int r = 0; r < MAX_ROWS; r++) {
             for (int c = 0; c < MAX_COLS; c++) {
@@ -66,7 +68,7 @@ void clusterDetectAndHandle(int startR, int startC, sf::Sprite bubbleGrid[MAX_RO
     }
 }
 
-bool placeNearestNeighborAndHandle(int row, int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed) {
+bool placeNearestNeighborAndHandle(int row, int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed, int &score) {
     int DeltaRowSteps[] = {0, 0, -1, 1, -1, -1, 1, 1};
     int DeltaColSteps[] = {-1, 1, 0, 0, -1, 1, -1, 1};
     int bestRow = -1, bestCol = -1;
@@ -96,7 +98,7 @@ bool placeNearestNeighborAndHandle(int row, int col, sf::Sprite &BallToShoot, sf
         bubbleGrid[bestRow][bestCol].setPosition(bestCol * 64, bestRow * 64);
         occupied[bestRow][bestCol] = true;
         if (bestRow + 1 > currentRowCount) currentRowCount = bestRow + 1;
-        clusterDetectAndHandle(bestRow, bestCol, bubbleGrid, occupied, currentRowCount);
+        clusterDetectAndHandle(bestRow, bestCol, bubbleGrid, occupied, currentRowCount, score);
         ballActive = false;
         placed = true;
         return true;
@@ -104,7 +106,7 @@ bool placeNearestNeighborAndHandle(int row, int col, sf::Sprite &BallToShoot, sf
     return false;
 }
 
-bool fallbackColumnPlace(int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed) {
+bool fallbackColumnPlace(int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed, int &score) {
     int placeRow = -1;
     for (int r = 0; r < MAX_ROWS; r++) {
         if (!occupied[r][col]) {
@@ -123,13 +125,13 @@ bool fallbackColumnPlace(int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpri
     bubbleGrid[placeRow][col].setPosition(col * 64, placeRow * 64);
     occupied[placeRow][col] = true;
     if (placeRow + 1 > currentRowCount) currentRowCount = placeRow + 1;
-    clusterDetectAndHandle(placeRow, col, bubbleGrid, occupied, currentRowCount);
+    clusterDetectAndHandle(placeRow, col, bubbleGrid, occupied, currentRowCount, score);
     ballActive = false;
     placed = true;
     return true;
 }
 
-bool placeAtTopIfReached(sf::Vector2f &position, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount, bool &ballActive) {
+bool placeAtTopIfReached(sf::Vector2f &position, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount, bool &ballActive, int &score) {
     int col = static_cast<int>(rounding(position.x / 64.f));
     if (col < 0) col = 0;
     if (col >= MAX_COLS) col = MAX_COLS - 1;
@@ -147,7 +149,7 @@ bool placeAtTopIfReached(sf::Vector2f &position, sf::Sprite &BallToShoot, sf::Sp
         bubbleGrid[placeRow][col].setPosition(col * 64, placeRow * 64);
         occupied[placeRow][col] = true;
         if (placeRow + 1 > currentRowCount) currentRowCount = placeRow + 1;
-        clusterDetectAndHandle(placeRow, col, bubbleGrid, occupied, currentRowCount);
+        clusterDetectAndHandle(placeRow, col, bubbleGrid, occupied, currentRowCount, score);
         ballActive = false;
         return true;
     }

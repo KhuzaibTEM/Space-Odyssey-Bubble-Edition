@@ -59,14 +59,17 @@ int main() {
     // Pre-set the BallToShoot textureRect to nextBallColorIndex (so the preview shows it)
     BallToShoot.setTextureRect(sf::IntRect(nextBallColorIndex * 64, 0, 64, 64));
 
+    // Handling Error via Clock of clicking menu leading to a pre shoot of a bubble
+    sf::Clock clockMenuError;
+
     //Animation Logic for Sprite --> Plane
     sf::IntRect first_frame(0, 0, 48, 48);
     sf::IntRect second_frame(48, 0, 48, 48);
     sf::IntRect third_frame(96, 0, 48, 48);
     sf::IntRect fourth_frame(144, 0, 48, 48);
-
+    
     sf::Clock clock;
-    sf::Clock clockMenuError;
+    
 
     float animationLoopSpeed = 0.1f;
     int FrameNow = 0;
@@ -117,6 +120,7 @@ int main() {
                     mousePos.y >= ButtonPlayY && mousePos.y <= ButtonPlayY + buttonHeight) {
                     gameState = 1;
                     MenuErrorNextShoot = true;
+                    clockMenuError.restart();
                 }
 
                 // Save Button

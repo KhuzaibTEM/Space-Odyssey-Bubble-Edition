@@ -1,0 +1,191 @@
+#include <ctime>
+#include "Bubbles.h"
+#include "AngleCalc.h"
+#include "CollisionAction.h"
+
+int main() {
+    srand(time(NULL));
+    
+    sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Space Odyssey: Bubble Edition");
+    
+
+    //Loading the Sprites & Shapes
+    //sf::CircleShape Ball(10.f);
+    // sf::RectangleShape rectangle2(sf::Vector2f(50.f, 30.f));
+
+    sf::Font subFont;
+    subFont.loadFromFile("./Fonts/ArcadeClassic.ttf");
+    
+    sf::Font menuFont;
+    menuFont.loadFromFile("./Fonts/Blox2.ttf");
+    
+    sf::Texture plane;
+    plane.loadFromFile("./Sprites/plane/Plane.png");
+
+    sf::Sprite plane_sprite(plane);
+
+    sf::Texture BackGround;
+    BackGround.loadFromFile("./Background/Background.png");
+
+    sf::Sprite bg(BackGround);
+
+    sf::Texture Bubbles;
+    Bubbles.loadFromFile("./Sprites/Bubbles/Bubbles.png");
+
+    sf::Sprite BubbleSpriteTop(Bubbles);
+
+    // Ball as a sprite
+    sf::Sprite BallToShoot(Bubbles);
+    
+    BallToShoot.setScale(ballScaleFactor, ballScaleFactor);
+    // origin at center of the 64x64 frame
+    BallToShoot.setOrigin(originalFrameSize / 2.f, originalFrameSize / 2.f);
+
+    // We'll keep a "current color index" that represents the next shot
+    int nextBallColorIndex = rand() % 4;
+    // Pre-set the BallToShoot textureRect to nextBallColorIndex (so the preview shows it)
+    BallToShoot.setTextureRect(sf::IntRect(nextBallColorIndex * 64, 0, 64, 64));
+
+    //Animation Logic for Sprite --> Plane
+    sf::IntRect first_frame(0, 0, 48, 48);
+    sf::IntRect second_frame(48, 0, 48, 48);
+    sf::IntRect third_frame(96, 0, 48, 48);
+    sf::IntRect fourth_frame(144, 0, 48, 48);
+
+    sf::Clock clock;
+
+    float animationLoopSpeed = 0.1f;
+    int FrameNow = 0;
+    sf::IntRect arrayFrames[] = {first_frame, second_frame, third_frame, fourth_frame};
+
+
+
+    //Setting attributes to the Sprites & Shapes
+    plane_sprite.setPosition(630.f, 550.f);
+    plane_sprite.setScale(4.f,4.f);
+
+    bg.setScale(2.f,2.f);
+
+    //Ball.setFillColor(sf::Color::White);
+    // Ball.setPosition(550.f, 600.f);
+
+    // Set the sprite's origin to its center for proper rotation
+    plane_sprite.setOrigin(plane_sprite.getLocalBounds().width / 8, plane_sprite.getLocalBounds().height / 8);
+    //Ball.setOrigin(plane_sprite.getLocalBounds().width / 8, plane_sprite.getLocalBounds().height / 8);
+
+    // Track if the ball is moving
+    bool ballActive = false; 
+
+    // Velocity of the ball
+    sf::Vector2f BallVelocity(0.f, 0.f);
+
+    
+    sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS];
+    bool occupied[MAX_ROWS][MAX_COLS];
+    int currentRowCount = 3; // Initial No. of Rows of Bubbles
+
+    GridMaker(bubbleGrid, occupied, BubbleSpriteTop);
+
+    //Main Loop
+    while (window.isOpen()) {
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) window.close();
+        }
+
+        // Get mouse position relative to the window
+        sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+        sf::Vector2f planePos = plane_sprite.getPosition();
+
+        float angle = FindAngle(mousePos, planePos);
+
+        std::cout << angle << std::endl;
+
+        plane_sprite.setRotation(angle + 90); // 90 degree added for adjustment of sprite
+
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::W) && !ballActive) {
+            ballActive = true;
+
+            // Set the ball's initial velocity based on the angle
+            float speed = 0.5f; // Speed of Ball
+
+            BallToShoot.setPosition(planePos.x, planePos.y); // Start from the sprite's position
+
+            // Use the nextBallColorIndex for this shot
+            BallToShoot.setTextureRect(sf::IntRect(nextBallColorIndex * 64, 0, 64, 64));
+
+            // Prepare the following shot's color immediately
+            nextBallColorIndex = rand() % 4;
+
+            BallVelocity.x = std::cos(DegreeToRadian(angle)) * speed;
+            BallVelocity.y = std::sin(DegreeToRadian(angle)) * speed;
+        }
+
+        // Update ball position if active
+        if (ballActive) {
+            sf::Vector2f position = BallToShoot.getPosition();
+            BallToShoot.setPosition(position.x + BallVelocity.x, position.y + BallVelocity.y);
+
+            // Check if the ball is off-screen
+            if (position.x < 0 || position.x > window.getSize().x || position.y > window.getSize().y) {
+                ballActive = false;
+            }
+
+            // Collision detection & Action
+            bool placed = false;
+            for (int row = 0; row < currentRowCount && !placed; row++) {
+                for (int col = 0; col < MAX_COLS && !placed; col++) {
+                    if (!occupied[row][col]) continue;
+                    if (BallToShoot.getGlobalBounds().intersects(bubbleGrid[row][col].getGlobalBounds())) {
+                        if (placeNearestNeighborAndHandle(row, col, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, placed)) {
+                            break;
+                        }
+                        if (fallbackColumnPlace(col, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, placed)) {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!placed && position.y <= 0.f) {
+                placeAtTopIfReached(position, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive);
+            }
+        }
+
+        if (clock.getElapsedTime().asSeconds() > animationLoopSpeed) {
+            FrameNow = (FrameNow + 1) % 4;
+            plane_sprite.setTextureRect(arrayFrames[FrameNow]);
+            clock.restart();
+        }
+
+        window.clear();
+        window.draw(bg);
+        if (ballActive) window.draw(BallToShoot);
+        else {
+            // preview sprite to show the next bubble that will be shot
+            sf::Sprite preview(Bubbles);
+            preview.setTextureRect(sf::IntRect(nextBallColorIndex * 64, 0, 64, 64));
+            preview.setScale(ballScaleFactor, ballScaleFactor);
+            preview.setOrigin(originalFrameSize / 2.f, originalFrameSize / 2.f);
+
+            // position it slightly in front of the plane so user can see it
+            sf::Vector2f previewPos = plane_sprite.getPosition();
+            previewPos.y -= 30.f; // offset upward a bit
+            preview.setPosition(previewPos);
+            window.draw(preview);
+        }
+
+        // Draw the bubbles (draw only occupied cells)
+        for (int row = 0; row < currentRowCount; row++) {
+            for (int col = 0; col < MAX_COLS; col++) {
+                if (occupied[row][col]) window.draw(bubbleGrid[row][col]);
+            }
+        }
+        window.draw(plane_sprite);
+        
+        if (currentRowCount > 8) window.close();
+        else if (currentRowCount == 0) window.close();
+
+        window.display();
+    }
+}

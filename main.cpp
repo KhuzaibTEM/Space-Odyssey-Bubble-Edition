@@ -2,6 +2,7 @@
 #include "Bubbles.h"
 #include "AngleCalc.h"
 #include "CollisionAction.h"
+#include <string>
 
 int main() {
     srand(time(NULL));
@@ -9,16 +10,21 @@ int main() {
     sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Space Odyssey: Bubble Edition");
     
 
-    //Loading the Sprites & Shapes
-    //sf::CircleShape Ball(10.f);
-    // sf::RectangleShape rectangle2(sf::Vector2f(50.f, 30.f));
-
+    //Load Fonts
     sf::Font subFont;
     subFont.loadFromFile("./Fonts/ArcadeClassic.ttf");
     
+
+    int score = 0;
+    sf::Text mainText("Score " + std::to_string(score), subFont, GameFontSize);
+    mainText.setPosition(50, 680);
+    
     sf::Font menuFont;
     menuFont.loadFromFile("./Fonts/Blox2.ttf");
+
     
+    //Loading the Sprites & Shapes
+
     sf::Texture plane;
     plane.loadFromFile("./Sprites/plane/Plane.png");
 
@@ -137,10 +143,10 @@ int main() {
                 for (int col = 0; col < MAX_COLS && !placed; col++) {
                     if (!occupied[row][col]) continue;
                     if (BallToShoot.getGlobalBounds().intersects(bubbleGrid[row][col].getGlobalBounds())) {
-                        if (placeNearestNeighborAndHandle(row, col, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, placed)) {
+                        if (placeNearestNeighborAndHandle(row, col, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, placed, score)) {
                             break;
                         }
-                        if (fallbackColumnPlace(col, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, placed)) {
+                        if (fallbackColumnPlace(col, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, placed, score)) {
                             break;
                         }
                     }
@@ -148,7 +154,7 @@ int main() {
             }
 
             if (!placed && position.y <= 0.f) {
-                placeAtTopIfReached(position, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive);
+                placeAtTopIfReached(position, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, score);
             }
         }
 
@@ -182,6 +188,9 @@ int main() {
             }
         }
         window.draw(plane_sprite);
+        // Update score display each frame
+        mainText.setString("Score " + std::to_string(score));
+        window.draw(mainText);
         
         if (currentRowCount > 8) window.close();
         else if (currentRowCount == 0) window.close();

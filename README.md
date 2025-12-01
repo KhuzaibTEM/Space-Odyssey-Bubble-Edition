@@ -1,5 +1,5 @@
 # Space-Odyssey-Bubble-Edition
-A Single-Player Bubble Shooter game with a splash of space theme made with C++ and SFML. 
+A Single-Player Bubble Shooter game with a splash of space theme made with C++ and SFML (2.6.2). 
 
 ## Objective of the Player
 - Match 3 (or more) bubbles of the same color. Poof. Score goes up. Good job!

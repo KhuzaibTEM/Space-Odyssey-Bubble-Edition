@@ -14,12 +14,19 @@ void drawMainMenu(sf::RenderWindow &window, sf::Font &font) {
     playButton.setOutlineColor(sf::Color::Blue);
     playButton.setOutlineThickness(3.f);
 
-    sf::RectangleShape saveButton;
-    saveButton.setSize(sf::Vector2f(300, 80));
-    saveButton.setPosition(ButtonX, ButtonSaveY);
-    saveButton.setFillColor(sf::Color(30,30,30,200));
-    saveButton.setOutlineColor(sf::Color::Yellow);
-    saveButton.setOutlineThickness(3.f);
+    sf::RectangleShape loadButton;
+    loadButton.setSize(sf::Vector2f(300, 80));
+    loadButton.setPosition(ButtonX, ButtonSaveY);
+    loadButton.setFillColor(sf::Color(30,30,30,200));
+    loadButton.setOutlineColor(sf::Color::Yellow);
+    loadButton.setOutlineThickness(3.f);
+
+    sf::RectangleShape settingButton;
+    settingButton.setSize(sf::Vector2f(300, 80));
+    settingButton.setPosition(ButtonX, ButtonSettingY);
+    settingButton.setFillColor(sf::Color(30,30,30,200));
+    settingButton.setOutlineColor(sf::Color::Green);
+    settingButton.setOutlineThickness(3.f);
 
     sf::RectangleShape exitButton;
     exitButton.setSize(sf::Vector2f(300, 80));
@@ -36,22 +43,28 @@ void drawMainMenu(sf::RenderWindow &window, sf::Font &font) {
     playText.setPosition(615, 225);
     playText.setFillColor(sf::Color::White);
 
-    sf::Text saveText("Save", font, 30);
-    saveText.setPosition(615, 345);
-    saveText.setFillColor(sf::Color::White);
+    sf::Text settingText("Settings", font, 30);
+    settingText.setPosition(592, 345);
+    settingText.setFillColor(sf::Color::White);
+
+    sf::Text loadText("Load", font, 30);
+    loadText.setPosition(615, 455);
+    loadText.setFillColor(sf::Color::White);
 
     sf::Text quitText("Quit", font, 30);
-    quitText.setPosition(615, 455);
+    quitText.setPosition(615, 565);
     quitText.setFillColor(sf::Color::White);
 
     // Draw buttons and labels (each once)
     window.draw(playButton);
-    window.draw(saveButton);
+    window.draw(settingButton);
+    window.draw(loadButton);
     window.draw(exitButton);
 
     window.draw(title);
     window.draw(playText);
-    window.draw(saveText);
+    window.draw(settingText);
+    window.draw(loadText);
     window.draw(quitText);
 }
 

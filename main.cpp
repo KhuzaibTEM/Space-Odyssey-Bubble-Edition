@@ -3,7 +3,7 @@
 #include "AngleCalc.h"
 #include "CollisionAction.h"
 #include "MainMenu.h"
-#include <string>
+#include "InGameMenu.h"
 
 int main() {
 
@@ -15,6 +15,7 @@ int main() {
     // 0 = Main Menu
     // 1 = Play Game
     // 2 = Exit
+    // 3 = In Game Menu
     int gameState = 0;
 
     //Load Fonts
@@ -123,7 +124,13 @@ int main() {
                     clockMenuError.restart();
                 }
 
-                // Save Button
+                // Setting Button
+                if (mousePos.x >= ButtonX && mousePos.x <= ButtonX + buttonWidth &&
+                    mousePos.y >= ButtonSettingY && mousePos.y <= ButtonSettingY + buttonHeight) {
+                    // Will add setting functionality later
+                }
+
+                // Load Button
                 if (mousePos.x >= ButtonX && mousePos.x <= ButtonX + buttonWidth &&
                     mousePos.y >= ButtonSaveY && mousePos.y <= ButtonSaveY + buttonHeight) {
                     // Will add save functionality later
@@ -144,9 +151,26 @@ int main() {
             drawMainMenu(window, menuFont);
         }
         else if (gameState == 1) {
+            // Draw pause button during gameplay
+            drawPauseButton(window);
+
             // Get mouse position relative to the window
             sf::Vector2i mousePos = sf::Mouse::getPosition(window);
             sf::Vector2f planePos = plane_sprite.getPosition();
+
+            // Handle pause button click (prevent immediate shooting)
+            const int pauseX = WIDTH - 60;
+            const int pauseY = HEIGHT - 60;
+            const int pauseW = 40;
+            const int pauseH = 40;
+            if (event.type == sf::Event::MouseButtonPressed &&
+                mousePos.x >= pauseX && mousePos.x <= pauseX + pauseW &&
+                mousePos.y >= pauseY && mousePos.y <= pauseY + pauseH) {
+                // Enter paused state
+                gameState = 3;
+                MenuErrorNextShoot = true;
+                clockMenuError.restart();
+            }
 
             float angle = FindAngle(mousePos, planePos);
 
@@ -241,6 +265,42 @@ int main() {
         }
         else if (gameState == 2) window.close();
 
+        // Paused state: draw menu and handle its clicks
+        else if (gameState == 3) {
+
+            drawInGameMenu(window, menuFont);
+
+            // Handle clicks while paused
+            if (event.type == sf::Event::MouseButtonPressed) {
+                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+
+                // Resume
+                if (mousePos.x >= ButtonX - buttonWidth && mousePos.x <= ButtonX &&
+                    mousePos.y >= ButtonPlayY && mousePos.y <= ButtonPlayY + buttonHeight) {
+                    gameState = 1;
+                    MenuErrorNextShoot = true;
+                    clockMenuError.restart();
+                }
+
+                // Settings (toggle settings panel)
+                else if (mousePos.x >= ButtonX - buttonWidth && mousePos.x <= ButtonX &&
+                    mousePos.y >= ButtonSettingY && mousePos.y <= ButtonSettingY + buttonHeight) {
+                    // To be added
+                }
+
+                // Save (write a simple save file)
+                else if (mousePos.x >= ButtonX - buttonWidth && mousePos.x <= ButtonX &&
+                    mousePos.y >= ButtonSaveY && mousePos.y <= ButtonSaveY + buttonHeight) {
+                    // To be written
+                }
+
+                // Quit to main menu
+                else if (mousePos.x >= ButtonX - buttonWidth && mousePos.x <= ButtonX &&
+                    mousePos.y >= ButtonExitY && mousePos.y <= ButtonExitY + buttonHeight) {
+                    gameState = 0;
+                }
+            }
+        }
         window.display();
     }
 }

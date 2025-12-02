@@ -4,6 +4,7 @@
 #include "CollisionAction.h"
 #include "MainMenu.h"
 #include "InGameMenu.h"
+#include "SavingGame.h"
 
 int main() {
 
@@ -133,7 +134,14 @@ int main() {
                 // Load Button
                 if (mousePos.x >= ButtonX && mousePos.x <= ButtonX + buttonWidth &&
                     mousePos.y >= ButtonSaveY && mousePos.y <= ButtonSaveY + buttonHeight) {
-                    // Will add save functionality later
+
+                    if (loadGame("SaveFile.txt", bubbleGrid, occupied, score, currentRowCount, Bubbles)) {
+                        std::cout << "Loaded SaveFile.txt" << std::endl;
+                        gameState = 1;
+                        MenuErrorNextShoot = true;
+                        clockMenuError.restart();
+                    } 
+                    else std::cout << "No savefile found or failed to load" << std::endl;
                 }
 
                 // Exit Button
@@ -282,16 +290,19 @@ int main() {
                     clockMenuError.restart();
                 }
 
-                // Settings (toggle settings panel)
+                // Settings
                 else if (mousePos.x >= ButtonX - buttonWidth && mousePos.x <= ButtonX &&
                     mousePos.y >= ButtonSettingY && mousePos.y <= ButtonSettingY + buttonHeight) {
                     // To be added
                 }
 
-                // Save (write a simple save file)
+                // Save
                 else if (mousePos.x >= ButtonX - buttonWidth && mousePos.x <= ButtonX &&
                     mousePos.y >= ButtonSaveY && mousePos.y <= ButtonSaveY + buttonHeight) {
-                    // To be written
+                    if (saveGame("SaveFile.txt", bubbleGrid, occupied, score, currentRowCount)) {
+                        std::cout << "Game saved to SaveFile.txt" << std::endl;
+                    } 
+                    else std::cout << "Failed to save game" << std::endl;
                 }
 
                 // Quit to main menu

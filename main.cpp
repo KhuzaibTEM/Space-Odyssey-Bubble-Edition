@@ -5,6 +5,8 @@
 #include "MainMenu.h"
 #include "InGameMenu.h"
 #include "SavingGame.h"
+#include "settings.h"
+#include "SFML/Audio.hpp"
 
 int main() {
 
@@ -19,20 +21,39 @@ int main() {
     // 3 = In Game Menu
     int gameState = 0;
 
+    //Load Sound & Music
+    sf::SoundBuffer CollisionBuffer;
+    CollisionBuffer.loadFromFile("./Sounds/hitSound.ogg");
+    sf::Sound CollisionSound;
+    CollisionSound.setBuffer(CollisionBuffer);
+
+    sf::SoundBuffer shootBuffer;
+    shootBuffer.loadFromFile("./Sounds/shoot.ogg");
+    sf::Sound shootSound;
+    shootSound.setBuffer(shootBuffer);
+
+
+    sf::Music BgMusic;
+    BgMusic.openFromFile("./Sounds/SpaceTheme.ogg");
+    BgMusic.setVolume(30.f);
+    BgMusic.setLoop(true);
+    BgMusic.play();
+
+
     //Load Fonts
-    sf::Font subFont;
-    subFont.loadFromFile("./Fonts/ArcadeClassic.ttf");
+    sf::Font ScoreFont;
+    ScoreFont.loadFromFile("./Fonts/ArcadeClassic.ttf");
     
 
     int score = 0;
-    sf::Text mainText("Score " + std::to_string(score), subFont, GameFontSize);
+    sf::Text mainText("Score " + std::to_string(score), ScoreFont, GameFontSize);
     mainText.setPosition(50, 680);
     
     sf::Font menuFont;
     menuFont.loadFromFile("./Fonts/Blox2.ttf");
 
 
-    //Loading the Sprites & Shapes
+    //Loading the Sprites, Background & Texture
 
     sf::Texture plane;
     plane.loadFromFile("./Sprites/plane/Plane.png");
@@ -64,7 +85,7 @@ int main() {
     // Handling Error via Clock of clicking menu leading to a pre shoot of a bubble
     sf::Clock clockMenuError;
 
-    //Animation Logic for Sprite --> Plane
+    //Animation Logic for Sprite --> Plane (Since plane is 48x48 size, you can see the division of 48)
     sf::IntRect first_frame(0, 0, 48, 48);
     sf::IntRect second_frame(48, 0, 48, 48);
     sf::IntRect third_frame(96, 0, 48, 48);
@@ -108,6 +129,7 @@ int main() {
     GridMaker(bubbleGrid, occupied, BubbleSpriteTop);
 
     //Main Loop
+    
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -187,6 +209,7 @@ int main() {
             plane_sprite.setRotation(angle + 90); // 90 degree added for adjustment of sprite
 
             if (event.type == sf::Event::MouseButtonPressed && !ballActive && !MenuErrorNextShoot) {
+                shootSound.play();
                 ballActive = true;
 
                 // Set the ball's initial velocity based on the angle
@@ -221,10 +244,10 @@ int main() {
                     for (int col = 0; col < MAX_COLS && !placed; col++) {
                         if (!occupied[row][col]) continue;
                         if (BallToShoot.getGlobalBounds().intersects(bubbleGrid[row][col].getGlobalBounds())) {
-                            if (placeNearestNeighborAndHandle(row, col, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, placed, score)) {
+                            if (placeNearestNeighborAndHandle(row, col, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, placed, score, CollisionSound)) {
                                 break;
                             }
-                            if (fallbackColumnPlace(col, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, placed, score)) {
+                            if (fallbackColumnPlace(col, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, placed, score, CollisionSound)) {
                                 break;
                             }
                         }
@@ -232,7 +255,7 @@ int main() {
                 }
 
                 if (!placed && position.y <= 0.f) {
-                    placeAtTopIfReached(position, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, score);
+                    placeAtTopIfReached(position, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, score, CollisionSound);
                 }
             }
 

@@ -12,7 +12,10 @@ float DegreeToRadian(float Number);
 float rounding(float Number);
 std::string IntegerToString(int num);
 int length(std::string arr);
+int ilength(int arr[]);
 int stringToInteger(std::string num);
+void sorting(int arr[]);
+void RevSorting(int arr[]);
 
 float FindAngle(sf::Vector2i mousePos, sf::Vector2f spritePos) {
     // Calculate the angle between the sprite and the mouse cursor
@@ -65,6 +68,12 @@ int length(std::string arr) {
     return len;
 }
 
+int ilength(int arr[]) {
+    int len = 1;
+    while (arr[len]) len++;
+    return len;
+}
+
 int stringToInteger(std::string num) {
     int ans = 0;
     int size10 = 1;
@@ -76,6 +85,32 @@ int stringToInteger(std::string num) {
         size10 /= 10;
     }
     return ans;
+}
+
+void sorting(int arr[]) {
+    int temp;
+    for (int i = 0; i < ilength(arr) - 1; i++) {
+        for (int j = i + 1; j < ilength(arr); j++) {
+            if (arr[i] > arr[j]) {
+                temp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = temp;
+            }
+        }
+    }
+}
+
+void RevSorting(int arr[]) {
+    int temp;
+    for (int i = 0; i < ilength(arr) - 1; i++) {
+        for (int j = i + 1; j < ilength(arr); j++) {
+            if (arr[j] > arr[i]) {
+                temp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = temp;
+            }
+        }
+    }
 }
 
 #endif

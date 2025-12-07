@@ -1,5 +1,5 @@
-#ifndef ANGLECALC_H
-#define ANGLECALC_H
+#ifndef CALCULATIONS_H
+#define CALCULATIONS_H
 
 #include <iostream>
 #include <cmath>
@@ -11,6 +11,8 @@ float RadianToDegree(float Number);
 float DegreeToRadian(float Number);
 float rounding(float Number);
 std::string IntegerToString(int num);
+int length(std::string arr);
+int stringToInteger(std::string num);
 
 float FindAngle(sf::Vector2i mousePos, sf::Vector2f spritePos) {
     // Calculate the angle between the sprite and the mouse cursor
@@ -52,6 +54,25 @@ std::string IntegerToString(int num) {
     for (int i = 0; i < size; i++) {
         ans += static_cast<char>(num/size10 + 48);
         num %= size10;
+        size10 /= 10;
+    }
+    return ans;
+}
+
+int length(std::string arr) {
+    int len = 0;
+    while (arr[len] != '\0') len++;
+    return len;
+}
+
+int stringToInteger(std::string num) {
+    int ans = 0;
+    int size10 = 1;
+    for (int i = 0; i < length(num) - 1; i++) {
+        size10 *= 10;
+    }
+    for (int i = 0; i < length(num); i++) {
+        ans += (static_cast<int>(num[i]) - 48) * size10;
         size10 /= 10;
     }
     return ans;

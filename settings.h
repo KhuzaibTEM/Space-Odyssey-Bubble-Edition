@@ -36,12 +36,12 @@ void drawToggleRow(sf::RenderWindow &window, sf::Font &font, const std::string &
 }
 
 void drawSettings(sf::RenderWindow &window, sf::Font &font, bool musicMuted, bool sfxMuted) {
-	sf::RectangleShape settingOverlay(sf::Vector2f((float)WIDTH, (float)HEIGHT));
+	sf::RectangleShape settingOverlay(sf::Vector2f(WIDTH, HEIGHT));
 	settingOverlay.setFillColor(sf::Color(0, 0, 0, 140));
 	window.draw(settingOverlay);
 
-	sf::RectangleShape backButton(sf::Vector2f((float)buttonWidth, (float)buttonHeight));
-	backButton.setPosition((float)(ButtonBackX - buttonWidth), (float)ButtonBackY);
+	sf::RectangleShape backButton(sf::Vector2f(buttonWidth, buttonHeight));
+	backButton.setPosition((ButtonBackX - buttonWidth), ButtonBackY);
 	backButton.setFillColor(sf::Color(50,50,50,220));
 	backButton.setOutlineColor(sf::Color::White);
 	backButton.setOutlineThickness(2.f);
@@ -50,12 +50,12 @@ void drawSettings(sf::RenderWindow &window, sf::Font &font, bool musicMuted, boo
 	//Text labels
 	sf::Text settingsTitle("Settings", font, 48);
 	settingsTitle.setFillColor(sf::Color::White);
-	settingsTitle.setPosition((float)(WIDTH/2 - 80), 80.f);
+	settingsTitle.setPosition((WIDTH/2 - 80), 80.f);
 	window.draw(settingsTitle);
 
 	sf::Text backMenuText("Back", font, 28);
 	backMenuText.setFillColor(sf::Color::White);
-	backMenuText.setPosition((float)(ButtonBackX - buttonWidth + 20), (float)(ButtonBackY + 16));
+	backMenuText.setPosition((ButtonBackX - buttonWidth + 20), (ButtonBackY + 16));
 	window.draw(backMenuText);
 
 	drawToggleRow(window, font, "Mute Background Music", sf::Vector2f(240.f, 225.f), sf::Vector2f(880.f, 255.f), musicMuted);

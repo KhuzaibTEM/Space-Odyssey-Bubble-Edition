@@ -20,6 +20,7 @@ int main() {
     // 2 = Exit
     // 3 = In Game Menu
     int gameState = 0;
+    int prevGameState = 0;
 
     //Load Sound & Music
     sf::SoundBuffer CollisionBuffer;
@@ -32,12 +33,13 @@ int main() {
     sf::Sound shootSound;
     shootSound.setBuffer(shootBuffer);
 
-
     sf::Music BgMusic;
     BgMusic.openFromFile("./Sounds/SpaceTheme.ogg");
-    BgMusic.setVolume(30.f);
+    BgMusic.setVolume(defaultMusicVolume);
     BgMusic.setLoop(true);
     BgMusic.play();
+    shootSound.setVolume(defaultSfxVolume);
+    CollisionSound.setVolume(defaultSfxVolume);
 
 
     //Load Fonts
@@ -85,6 +87,10 @@ int main() {
     // Handling Error via Clock of clicking menu leading to a pre shoot of a bubble
     sf::Clock clockMenuError;
 
+    // Handling error for settings circle click registering multiple times
+    sf::Clock settingsClickClock;
+    
+
     //Animation Logic for Sprite --> Plane (Since plane is 48x48 size, you can see the division of 48)
     sf::IntRect first_frame(0, 0, 48, 48);
     sf::IntRect second_frame(48, 0, 48, 48);
@@ -92,6 +98,7 @@ int main() {
     sf::IntRect fourth_frame(144, 0, 48, 48);
     
     sf::Clock clock;
+    
     
 
     float animationLoopSpeed = 0.1f;
@@ -114,6 +121,9 @@ int main() {
     //Ball.setOrigin(plane_sprite.getLocalBounds().width / 8, plane_sprite.getLocalBounds().height / 8);
 
     bool MenuErrorNextShoot = false;
+    bool musicMuted = false;
+    bool sfxMuted = false;
+    int shotsWithoutClear = 0;
 
     // Track if the ball is moving
     bool ballActive = false; 
@@ -132,16 +142,17 @@ int main() {
     
     while (window.isOpen()) {
         sf::Event event;
+        sf::Vector2i mousePos = sf::Mouse::getPosition(window);
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) window.close();
         }
         if (gameState == 0) {
             if (event.type == sf::Event::MouseButtonPressed) {
-                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
 
                 // Play Button
                 if (mousePos.x >= ButtonX && mousePos.x <= ButtonX + buttonWidth &&
                     mousePos.y >= ButtonPlayY && mousePos.y <= ButtonPlayY + buttonHeight) {
+                    prevGameState = gameState;
                     gameState = 1;
                     MenuErrorNextShoot = true;
                     clockMenuError.restart();
@@ -150,7 +161,8 @@ int main() {
                 // Setting Button
                 if (mousePos.x >= ButtonX && mousePos.x <= ButtonX + buttonWidth &&
                     mousePos.y >= ButtonSettingY && mousePos.y <= ButtonSettingY + buttonHeight) {
-                    // Will add setting functionality later
+                    prevGameState = gameState;
+                    gameState = 4;
                 }
 
                 // Load Button
@@ -159,6 +171,7 @@ int main() {
 
                     if (loadGame("SaveFile.txt", bubbleGrid, occupied, score, currentRowCount, Bubbles)) {
                         std::cout << "Loaded SaveFile.txt" << std::endl;
+                        prevGameState = gameState;
                         gameState = 1;
                         MenuErrorNextShoot = true;
                         clockMenuError.restart();
@@ -169,6 +182,7 @@ int main() {
                 // Exit Button
                 if (mousePos.x >= ButtonX && mousePos.x <= ButtonX + buttonWidth &&
                     mousePos.y >= ButtonExitY && mousePos.y <= ButtonExitY + buttonHeight) {
+                    prevGameState = gameState;
                     gameState = 2;
                 }
             }
@@ -177,6 +191,8 @@ int main() {
 
         window.clear();
         window.draw(bg);
+
+        
         if (gameState == 0) {
             drawMainMenu(window, menuFont);
         }
@@ -185,18 +201,15 @@ int main() {
             drawPauseButton(window);
 
             // Get mouse position relative to the window
-            sf::Vector2i mousePos = sf::Mouse::getPosition(window);
             sf::Vector2f planePos = plane_sprite.getPosition();
 
             // Handle pause button click (prevent immediate shooting)
-            const int pauseX = WIDTH - 60;
-            const int pauseY = HEIGHT - 60;
-            const int pauseW = 40;
-            const int pauseH = 40;
+            
             if (event.type == sf::Event::MouseButtonPressed &&
                 mousePos.x >= pauseX && mousePos.x <= pauseX + pauseW &&
                 mousePos.y >= pauseY && mousePos.y <= pauseY + pauseH) {
                 // Enter paused state
+                prevGameState = gameState;
                 gameState = 3;
                 MenuErrorNextShoot = true;
                 clockMenuError.restart();
@@ -209,7 +222,7 @@ int main() {
             plane_sprite.setRotation(angle + 90); // 90 degree added for adjustment of sprite
 
             if (event.type == sf::Event::MouseButtonPressed && !ballActive && !MenuErrorNextShoot) {
-                shootSound.play();
+                if (!sfxMuted) shootSound.play();
                 ballActive = true;
 
                 // Set the ball's initial velocity based on the angle
@@ -228,6 +241,9 @@ int main() {
             }
             else if (event.type == sf::Event::MouseButtonPressed && MenuErrorNextShoot && clockMenuError.getElapsedTime().asSeconds() > 1) MenuErrorNextShoot = false;
 
+            bool shotResolvedThisFrame = false;
+            bool clearedClusterThisShot = false;
+
             // Update ball position if active
             if (ballActive) {
                 sf::Vector2f position = BallToShoot.getPosition();
@@ -244,10 +260,16 @@ int main() {
                     for (int col = 0; col < MAX_COLS && !placed; col++) {
                         if (!occupied[row][col]) continue;
                         if (BallToShoot.getGlobalBounds().intersects(bubbleGrid[row][col].getGlobalBounds())) {
-                            if (placeNearestNeighborAndHandle(row, col, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, placed, score, CollisionSound)) {
+                            bool cleared = false;
+                            if (placeNearestNeighborAndHandle(row, col, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, placed, score, CollisionSound, cleared)) {
+                                clearedClusterThisShot = clearedClusterThisShot || cleared;
+                                shotResolvedThisFrame = true;
                                 break;
                             }
-                            if (fallbackColumnPlace(col, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, placed, score, CollisionSound)) {
+                            bool fallbackCleared = false;
+                            if (fallbackColumnPlace(col, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, placed, score, CollisionSound, fallbackCleared)) {
+                                clearedClusterThisShot = clearedClusterThisShot || fallbackCleared;
+                                shotResolvedThisFrame = true;
                                 break;
                             }
                         }
@@ -255,7 +277,23 @@ int main() {
                 }
 
                 if (!placed && position.y <= 0.f) {
-                    placeAtTopIfReached(position, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, score, CollisionSound);
+                    bool topCleared = false;
+                    if (placeAtTopIfReached(position, BallToShoot, BubbleSpriteTop, bubbleGrid, occupied, currentRowCount, ballActive, score, CollisionSound, topCleared)) {
+                        clearedClusterThisShot = clearedClusterThisShot || topCleared;
+                        shotResolvedThisFrame = true;
+                    }
+                }
+            }
+
+            if (!ballActive && shotResolvedThisFrame) {
+                if (clearedClusterThisShot) {
+                    shotsWithoutClear = 0;
+                } else {
+                    shotsWithoutClear++;
+                    if (shotsWithoutClear >= 5) {
+                        pushNewRow(bubbleGrid, occupied, BubbleSpriteTop, currentRowCount);
+                        shotsWithoutClear = 0;
+                    }
                 }
             }
 
@@ -296,18 +334,18 @@ int main() {
         }
         else if (gameState == 2) window.close();
 
-        // Paused state: draw menu and handle its clicks
+        // Paused state: draw in game menu and handle its clicks
         else if (gameState == 3) {
 
             drawInGameMenu(window, menuFont);
 
             // Handle clicks while paused
             if (event.type == sf::Event::MouseButtonPressed) {
-                sf::Vector2i mousePos = sf::Mouse::getPosition(window);
 
                 // Resume
                 if (mousePos.x >= ButtonX - buttonWidth && mousePos.x <= ButtonX &&
                     mousePos.y >= ButtonPlayY && mousePos.y <= ButtonPlayY + buttonHeight) {
+                    prevGameState = gameState;
                     gameState = 1;
                     MenuErrorNextShoot = true;
                     clockMenuError.restart();
@@ -316,7 +354,8 @@ int main() {
                 // Settings
                 else if (mousePos.x >= ButtonX - buttonWidth && mousePos.x <= ButtonX &&
                     mousePos.y >= ButtonSettingY && mousePos.y <= ButtonSettingY + buttonHeight) {
-                    // To be added
+                    prevGameState = gameState;
+                    gameState = 4;
                 }
 
                 // Save
@@ -331,7 +370,35 @@ int main() {
                 // Quit to main menu
                 else if (mousePos.x >= ButtonX - buttonWidth && mousePos.x <= ButtonX &&
                     mousePos.y >= ButtonExitY && mousePos.y <= ButtonExitY + buttonHeight) {
+                    prevGameState = gameState;
                     gameState = 0;
+                }
+            }
+        }
+
+        //Draw settings and handle its clicks
+        else if (gameState == 4) {
+            drawSettings(window, menuFont, musicMuted, sfxMuted);
+
+            if (event.type == sf::Event::MouseButtonPressed) {
+                bool allowToggle = settingsClickClock.getElapsedTime().asSeconds() >= settingsClickCooldown;
+                sf::Vector2f mousePosF(static_cast<float>(mousePos.x), static_cast<float>(mousePos.y));
+
+                if (mousePos.x >= ButtonBackX - buttonWidth && mousePos.x <= ButtonBackX &&
+                    mousePos.y >= ButtonBackY && mousePos.y <= ButtonBackY + buttonHeight) {
+                    gameState = prevGameState;
+                }
+                else if (allowToggle && musicToggleBounds().contains(mousePosF)) {
+                    musicMuted = !musicMuted;
+                    BgMusic.setVolume(musicMuted ? 0.f : defaultMusicVolume);
+                    settingsClickClock.restart();
+                }
+                else if (allowToggle && sfxToggleBounds().contains(mousePosF)) {
+                    sfxMuted = !sfxMuted;
+                    float newVolume = sfxMuted ? 0.f : defaultSfxVolume;
+                    shootSound.setVolume(newVolume);
+                    CollisionSound.setVolume(newVolume);
+                    settingsClickClock.restart();
                 }
             }
         }

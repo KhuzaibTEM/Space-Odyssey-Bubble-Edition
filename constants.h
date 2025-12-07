@@ -20,6 +20,14 @@ const int ButtonSettingY = 320;
 const int ButtonSaveY = 430; 
 const int ButtonExitY = 540;
 
+const int ButtonHighScoreX = 950;
+const int ButtonHighScoreY = 610;
+
+const int HighScoreDispX = ButtonX;
+
+const int BackToMenuButtonX = 100;
+const int BackToMenuButtonY = ButtonHighScoreY;
+
 const int pauseX = WIDTH - 60;
 const int pauseY = HEIGHT - 60;
 const int pauseW = 40;

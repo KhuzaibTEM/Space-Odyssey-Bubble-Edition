@@ -5,7 +5,7 @@ A Single-Player Bubble Shooter game with a splash of space theme made with C++ a
 - Match 3 (or more) bubbles of the same color. Poof. Score goes up. Good job!
 - But miss too many shots in a row (specifically 5), and a brand new row of bubbles is created from space, crowding the top.
 - And when those sneaky bubbles hit the bottom? Game over.
-- But if you finish all the bubble you are crowned the Victor.
+- But if you finish all the bubble you are crowned the Victor with your score ready to be displayed on the High Score menu.
 
 ## Features & Funcion
 - A start screen where you can begin fresh, load a game, peek at high scores, tinker with settings, or just rage-quit.

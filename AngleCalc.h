@@ -33,7 +33,7 @@ float DegreeToRadian(float Num) {
 }
 
 float rounding(float num) {
-    if (num - static_cast<int>(num) == 0.5) return static_cast<int>(num) + 1;
+    if (num - static_cast<int>(num) >= 0.5) return static_cast<int>(num) + 1;
     else return static_cast<int>(num);
 }
 

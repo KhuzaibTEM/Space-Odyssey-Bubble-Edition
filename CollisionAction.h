@@ -3,7 +3,7 @@
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
-#include "AngleCalc.h"
+#include "Calculations.h"
 #include "constants.h"
 
 bool clusterDetectAndHandle(int startRow, int startCol, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, int &score, sf::Sound& hitSound);

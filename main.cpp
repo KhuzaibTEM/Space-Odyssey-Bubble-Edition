@@ -1,11 +1,12 @@
 #include <ctime>
 #include "Bubbles.h"
-#include "AngleCalc.h"
+#include "Calculations.h"
 #include "CollisionAction.h"
 #include "MainMenu.h"
 #include "InGameMenu.h"
 #include "SavingGame.h"
 #include "settings.h"
+#include "HighScore.h"
 #include "SFML/Audio.hpp"
 
 int main() {
@@ -19,6 +20,8 @@ int main() {
     // 1 = Play Game
     // 2 = Exit
     // 3 = In Game Menu
+    // 4 = Settings
+    // 5 = View High Score
     int gameState = 0;
     int prevGameState = 0;
 
@@ -99,8 +102,6 @@ int main() {
     
     sf::Clock clock;
     
-    
-
     float animationLoopSpeed = 0.1f;
     int FrameNow = 0;
     sf::IntRect arrayFrames[] = {first_frame, second_frame, third_frame, fourth_frame};
@@ -113,12 +114,8 @@ int main() {
 
     bg.setScale(2.f,2.f);
 
-    //Ball.setFillColor(sf::Color::White);
-    // Ball.setPosition(550.f, 600.f);
-
     // Set the sprite's origin to its center for proper rotation
     plane_sprite.setOrigin(plane_sprite.getLocalBounds().width / 8, plane_sprite.getLocalBounds().height / 8);
-    //Ball.setOrigin(plane_sprite.getLocalBounds().width / 8, plane_sprite.getLocalBounds().height / 8);
 
     bool MenuErrorNextShoot = false;
     bool musicMuted = false;
@@ -139,7 +136,6 @@ int main() {
     GridMaker(bubbleGrid, occupied, BubbleSpriteTop);
 
     //Main Loop
-    
     while (window.isOpen()) {
         sf::Event event;
         sf::Vector2i mousePos = sf::Mouse::getPosition(window);
@@ -163,6 +159,13 @@ int main() {
                     mousePos.y >= ButtonSettingY && mousePos.y <= ButtonSettingY + buttonHeight) {
                     prevGameState = gameState;
                     gameState = 4;
+                }
+
+                // View Highscore Button
+                else if (mousePos.x >= ButtonHighScoreX && mousePos.x <= ButtonHighScoreX + buttonWidth &&
+                    mousePos.y >= ButtonHighScoreY && mousePos.y <= ButtonHighScoreY + buttonHeight) {
+                    prevGameState = gameState;
+                    gameState = 5;
                 }
 
                 // Load Button
@@ -204,11 +207,9 @@ int main() {
             sf::Vector2f planePos = plane_sprite.getPosition();
 
             // Handle pause button click (prevent immediate shooting)
-            
             if (event.type == sf::Event::MouseButtonPressed &&
                 mousePos.x >= pauseX && mousePos.x <= pauseX + pauseW &&
                 mousePos.y >= pauseY && mousePos.y <= pauseY + pauseH) {
-                // Enter paused state
                 prevGameState = gameState;
                 gameState = 3;
                 MenuErrorNextShoot = true;
@@ -217,8 +218,7 @@ int main() {
 
             float angle = FindAngle(mousePos, planePos);
 
-            std::cout << angle << std::endl;
-
+            //std::cout << angle << std::endl;
             plane_sprite.setRotation(angle + 90); // 90 degree added for adjustment of sprite
 
             if (event.type == sf::Event::MouseButtonPressed && !ballActive && !MenuErrorNextShoot) {
@@ -239,7 +239,7 @@ int main() {
                 BallVelocity.x = std::cos(DegreeToRadian(angle)) * speed;
                 BallVelocity.y = std::sin(DegreeToRadian(angle)) * speed;
             }
-            else if (event.type == sf::Event::MouseButtonPressed && MenuErrorNextShoot && clockMenuError.getElapsedTime().asSeconds() > 1) MenuErrorNextShoot = false;
+            else if (event.type == sf::Event::MouseButtonPressed && MenuErrorNextShoot && clockMenuError.getElapsedTime().asSeconds() > 0.25) MenuErrorNextShoot = false;
 
             bool shotResolvedThisFrame = false;
             bool clearedClusterThisShot = false;
@@ -326,11 +326,14 @@ int main() {
             window.draw(plane_sprite);
 
             // Update score display each frame
-            mainText.setString("Score " + std::to_string(score));
+            mainText.setString("Score " + IntegerToString(score));
             window.draw(mainText);
             
             if (currentRowCount > 8) window.close();
-            else if (currentRowCount == 0) window.close();
+            else if (currentRowCount == 0) {
+                newHighScore(score);
+                window.close();
+            }
         }
         else if (gameState == 2) window.close();
 
@@ -370,13 +373,14 @@ int main() {
                 // Quit to main menu
                 else if (mousePos.x >= ButtonX - buttonWidth && mousePos.x <= ButtonX &&
                     mousePos.y >= ButtonExitY && mousePos.y <= ButtonExitY + buttonHeight) {
+                    
                     prevGameState = gameState;
                     gameState = 0;
                 }
             }
         }
 
-        //Draw settings and handle its clicks
+        // View settings
         else if (gameState == 4) {
             drawSettings(window, menuFont, musicMuted, sfxMuted);
 
@@ -401,6 +405,18 @@ int main() {
                     settingsClickClock.restart();
                 }
             }
+        }
+
+        // Viewing Highscores
+        else if (gameState == 5) {
+            drawHighScore(window, ScoreFont, menuFont);
+            if (event.type == sf::Event::MouseButtonPressed) {
+                if (mousePos.x >= BackToMenuButtonX && mousePos.x <= BackToMenuButtonX + buttonWidth &&
+                    mousePos.y >= BackToMenuButtonY && mousePos.y <= BackToMenuButtonY + buttonHeight) {
+                    prevGameState = gameState;
+                    gameState = 0;
+                }
+            }   
         }
         window.display();
     }

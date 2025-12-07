@@ -5,6 +5,8 @@
 #include <iostream>
 #include "constants.h"
 
+void drawMainMenu(sf::RenderWindow &window, sf::Font &font);
+
 void drawMainMenu(sf::RenderWindow &window, sf::Font &font) {
 
     sf::RectangleShape playButton;
@@ -28,6 +30,13 @@ void drawMainMenu(sf::RenderWindow &window, sf::Font &font) {
     settingButton.setOutlineColor(sf::Color::Green);
     settingButton.setOutlineThickness(3.f);
 
+    sf::RectangleShape HighScoreButton;
+    HighScoreButton.setSize(sf::Vector2f(300, 80));
+    HighScoreButton.setPosition(ButtonHighScoreX, ButtonHighScoreY);
+    HighScoreButton.setFillColor(sf::Color(30,30,30,200));
+    HighScoreButton.setOutlineColor(sf::Color::Magenta);
+    HighScoreButton.setOutlineThickness(3.f);
+
     sf::RectangleShape exitButton;
     exitButton.setSize(sf::Vector2f(300, 80));
     exitButton.setPosition(ButtonX, ButtonExitY);
@@ -47,6 +56,10 @@ void drawMainMenu(sf::RenderWindow &window, sf::Font &font) {
     settingText.setPosition(592, 345);
     settingText.setFillColor(sf::Color::White);
 
+    sf::Text HighScoreText("High Scores", font, 30);
+    HighScoreText.setPosition(ButtonHighScoreX + 75, ButtonHighScoreY + 23);
+    HighScoreText.setFillColor(sf::Color::White);
+
     sf::Text loadText("Load", font, 30);
     loadText.setPosition(615, 455);
     loadText.setFillColor(sf::Color::White);
@@ -58,12 +71,14 @@ void drawMainMenu(sf::RenderWindow &window, sf::Font &font) {
     // Draw buttons and labels (each once)
     window.draw(playButton);
     window.draw(settingButton);
+    window.draw(HighScoreButton);
     window.draw(loadButton);
     window.draw(exitButton);
 
     window.draw(title);
     window.draw(playText);
     window.draw(settingText);
+    window.draw(HighScoreText);
     window.draw(loadText);
     window.draw(quitText);
 }

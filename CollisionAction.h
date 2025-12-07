@@ -6,12 +6,13 @@
 #include "AngleCalc.h"
 #include "constants.h"
 
-void clusterDetectAndHandle(int startRow, int startCol, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, int &score, sf::Sound& hitSound);
-bool placeNearestNeighborAndHandle(int row, int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed, int &score, sf::Sound& hitSound);
-bool fallbackColumnPlace(int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed, int &score, sf::Sound& hitSound);
-bool placeAtTopIfReached(sf::Vector2f &position, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, bool &ballActive, int &score, sf::Sound& hitSound);
+bool clusterDetectAndHandle(int startRow, int startCol, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, int &score, sf::Sound& hitSound);
+bool placeNearestNeighborAndHandle(int row, int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed, int &score, sf::Sound& hitSound, bool &clearedCluster);
+bool fallbackColumnPlace(int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed, int &score, sf::Sound& hitSound, bool &clearedCluster);
+bool placeAtTopIfReached(sf::Vector2f &position, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], int &currentRowCount, bool &ballActive, int &score, sf::Sound& hitSound, bool &clearedCluster);
+void pushNewRow(sf::Sprite bubbleGrid[][MAX_COLS], bool occupied[][MAX_COLS], sf::Sprite BubbleSpriteTop, int &currentRowCount);
 
-void clusterDetectAndHandle(int startR, int startC, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount, int &score, sf::Sound& hitSound) {
+bool clusterDetectAndHandle(int startR, int startC, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount, int &score, sf::Sound& hitSound) {
     int toRemove[MAX_ROWS][MAX_COLS];
     for (int r = 0; r < MAX_ROWS; r++) {
         for (int c = 0; c < MAX_COLS; c++) {
@@ -66,10 +67,12 @@ void clusterDetectAndHandle(int startR, int startC, sf::Sprite bubbleGrid[MAX_RO
         }
         hitSound.play();
         currentRowCount = (highest > 0) ? highest : 0;
+        return true;
     }
+    return false;
 }
 
-bool placeNearestNeighborAndHandle(int row, int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed, int &score, sf::Sound& hitSound) {
+bool placeNearestNeighborAndHandle(int row, int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed, int &score, sf::Sound& hitSound, bool &clearedCluster) {
     int DeltaRowSteps[] = {0, 0, -1, 1, -1, -1, 1, 1};
     int DeltaColSteps[] = {-1, 1, 0, 0, -1, 1, -1, 1};
     int bestRow = -1, bestCol = -1;
@@ -99,7 +102,7 @@ bool placeNearestNeighborAndHandle(int row, int col, sf::Sprite &BallToShoot, sf
         bubbleGrid[bestRow][bestCol].setPosition(bestCol * 64, bestRow * 64);
         occupied[bestRow][bestCol] = true;
         if (bestRow + 1 > currentRowCount) currentRowCount = bestRow + 1;
-        clusterDetectAndHandle(bestRow, bestCol, bubbleGrid, occupied, currentRowCount, score, hitSound);
+        clearedCluster = clusterDetectAndHandle(bestRow, bestCol, bubbleGrid, occupied, currentRowCount, score, hitSound);
         ballActive = false;
         placed = true;
         return true;
@@ -107,7 +110,7 @@ bool placeNearestNeighborAndHandle(int row, int col, sf::Sprite &BallToShoot, sf
     return false;
 }
 
-bool fallbackColumnPlace(int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed, int &score, sf::Sound& hitSound) {
+    bool fallbackColumnPlace(int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount, bool &ballActive, bool &placed, int &score, sf::Sound& hitSound, bool &clearedCluster) {
     int placeRow = -1;
     for (int r = 0; r < MAX_ROWS; r++) {
         if (!occupied[r][col]) {
@@ -126,13 +129,13 @@ bool fallbackColumnPlace(int col, sf::Sprite &BallToShoot, sf::Sprite BubbleSpri
     bubbleGrid[placeRow][col].setPosition(col * 64, placeRow * 64);
     occupied[placeRow][col] = true;
     if (placeRow + 1 > currentRowCount) currentRowCount = placeRow + 1;
-    clusterDetectAndHandle(placeRow, col, bubbleGrid, occupied, currentRowCount, score, hitSound);
+    clearedCluster = clusterDetectAndHandle(placeRow, col, bubbleGrid, occupied, currentRowCount, score, hitSound);
     ballActive = false;
     placed = true;
     return true;
 }
 
-bool placeAtTopIfReached(sf::Vector2f &position, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount, bool &ballActive, int &score, sf::Sound& hitSound) {
+bool placeAtTopIfReached(sf::Vector2f &position, sf::Sprite &BallToShoot, sf::Sprite BubbleSpriteTop, sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], int &currentRowCount, bool &ballActive, int &score, sf::Sound& hitSound, bool &clearedCluster) {
     int col = static_cast<int>(rounding(position.x / 64.f));
     if (col < 0) col = 0;
     if (col >= MAX_COLS) col = MAX_COLS - 1;
@@ -150,12 +153,30 @@ bool placeAtTopIfReached(sf::Vector2f &position, sf::Sprite &BallToShoot, sf::Sp
         bubbleGrid[placeRow][col].setPosition(col * 64, placeRow * 64);
         occupied[placeRow][col] = true;
         if (placeRow + 1 > currentRowCount) currentRowCount = placeRow + 1;
-        clusterDetectAndHandle(placeRow, col, bubbleGrid, occupied, currentRowCount, score, hitSound);
+        clearedCluster = clusterDetectAndHandle(placeRow, col, bubbleGrid, occupied, currentRowCount, score, hitSound);
         ballActive = false;
         return true;
     }
     ballActive = false;
     return false;
+}
+
+void pushNewRow(sf::Sprite bubbleGrid[MAX_ROWS][MAX_COLS], bool occupied[MAX_ROWS][MAX_COLS], sf::Sprite BubbleSpriteTop, int &currentRowCount) {
+    for (int r = MAX_ROWS - 1; r > 0; r--) {
+        for (int c = 0; c < MAX_COLS; c++) {
+            bubbleGrid[r][c] = bubbleGrid[r - 1][c];
+            occupied[r][c] = occupied[r - 1][c];
+            if (occupied[r][c]) bubbleGrid[r][c].setPosition(c * 64.f, r * 64.f);
+        }
+    }
+    for (int c = 0; c < MAX_COLS; c++) {
+        int colorIndex = rand() % 4;
+        bubbleGrid[0][c] = BubbleSpriteTop;
+        bubbleGrid[0][c].setTextureRect(sf::IntRect(colorIndex * 64, 0, 64, 64));
+        bubbleGrid[0][c].setPosition(c * 64.f, 0.f);
+        occupied[0][c] = true;
+    }
+    if (currentRowCount < MAX_ROWS) currentRowCount++;
 }
 
 #endif

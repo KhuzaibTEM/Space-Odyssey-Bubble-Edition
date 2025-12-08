@@ -51,7 +51,7 @@ int main() {
     
 
     int score = 0;
-    sf::Text mainText("Score " + std::to_string(score), ScoreFont, GameFontSize);
+    sf::Text mainText("Score " + IntegerToString(score), ScoreFont, GameFontSize);
     mainText.setPosition(50, 680);
     
     sf::Font menuFont;

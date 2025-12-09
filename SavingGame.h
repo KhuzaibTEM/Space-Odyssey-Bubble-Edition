@@ -35,10 +35,6 @@ bool saveGame(const std::string &filename, sf::Sprite bubbleGrid[][MAX_COLS], bo
     }
     out.close();
 
-    // Append to score log
-    std::ofstream scoreOut("score.txt", std::ios::app);
-    if (scoreOut) scoreOut << score << std::endl;
-
     return true;
 }
 
@@ -57,7 +53,8 @@ bool loadGame(const std::string &filename, sf::Sprite bubbleGrid[][MAX_COLS], bo
             if (!(iss >> v)) v = -1;
             if (v < 0) {
                 occupied[r][c] = false;
-            } else {
+            } 
+            else {
                 occupied[r][c] = true;
                 bubbleGrid[r][c].setTexture(bubblesTexture);
                 bubbleGrid[r][c].setTextureRect(sf::IntRect(v * 64, 0, 64, 64));
@@ -66,7 +63,8 @@ bool loadGame(const std::string &filename, sf::Sprite bubbleGrid[][MAX_COLS], bo
             }
         }
     }
-    // Debug: print first row values to stderr
+    in.close();
+    // Debug: print first row values
     std::cout << "Loaded save: score=" << score << " rows=" << currentRowCount << std::endl;
     return true;
 }

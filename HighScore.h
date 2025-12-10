@@ -5,8 +5,10 @@
 #include <SFML/Graphics.hpp>
 #include <fstream>
 #include <string>
+
 #include "Calculations.h"
 #include "constants.h"
+
 
 void drawHighScore(sf::RenderWindow &window, sf::Font &scoreFont, sf::Font &menuFont);
 void newHighScore(int newHighScore);
@@ -18,21 +20,21 @@ void newHighScore(int newHighScore) {
 
     std::ifstream readHighscore("HighScore.txt");
     if (readHighscore) {
-        std::string line;
-        while (std::getline(readHighscore, line) && len < 100) {
-            if (line.empty()) continue;
+        int line;
+        while (readHighscore >> line && len < 100) {
+            if (!line) continue;
             if (len >= 100) break;
-            scores[len++] = stringToInteger(line);
+            scores[len++] = line;
         }
     }
     readHighscore.close();
 
-    if (len < 100) scores[len++] = newHighScore;
+    if (len < 100 && newHighScore != 0) scores[len++] = newHighScore;
     else scores[99] = newHighScore;
 
     RevSorting(scores);
 
-    if (len > 20) len = 20;
+    if (len > 10) len = 10;
 
     std::ofstream writeHighscore("HighScore.txt");
     if (writeHighscore) {
@@ -41,6 +43,7 @@ void newHighScore(int newHighScore) {
             if (i + 1 < len) writeHighscore << std::endl;
         }
     }
+    writeHighscore.close();
 }
 
 void drawHighScore(sf::RenderWindow &window, sf::Font &scoreFont, sf::Font &menuFont) {
@@ -60,15 +63,17 @@ void drawHighScore(sf::RenderWindow &window, sf::Font &scoreFont, sf::Font &menu
     BackToMenuText.setFillColor(sf::Color::White);
 
     std::ifstream readHighscore("HighScore.txt");
-    std::string line;
+    int line;
     int yDown = 0;
     int standing = 1;
+    
+    newHighScore(0);
     sf::Text HighScoreText("", scoreFont, 30);
-    while (std::getline(readHighscore, line)) {
-        if (standing == 1) HighScoreText.setString(IntegerToString(standing) + "st  " + line);
-        else if (standing == 2) HighScoreText.setString(IntegerToString(standing) + "nd  " + line);
-        else if (standing == 3) HighScoreText.setString(IntegerToString(standing) + "rd  " + line);
-        else HighScoreText.setString(IntegerToString(standing) + "th  " + line);
+    while (readHighscore >> line) {
+        if (standing == 1) HighScoreText.setString(IntegerToString(standing) + "st  " + IntegerToString(line));
+        else if (standing == 2) HighScoreText.setString(IntegerToString(standing) + "nd  " + IntegerToString(line));
+        else if (standing == 3) HighScoreText.setString(IntegerToString(standing) + "rd  " + IntegerToString(line));
+        else HighScoreText.setString(IntegerToString(standing) + "th  " + IntegerToString(line));
         HighScoreText.setPosition(HighScoreDispX, 25 + yDown);
         HighScoreText.setFillColor(sf::Color::White);
         window.draw(HighScoreText);

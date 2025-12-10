@@ -28,9 +28,9 @@ bool clusterDetectAndHandle(int startR, int startC, sf::Sprite bubbleGrid[MAX_RO
                 if (toRemove[r][c]) continue;
                 if (!occupied[r][c]) continue;
                 int colorHere = bubbleGrid[r][c].getTextureRect().left / 64;
-                int DeltaRowSteps4[4] = {-1, 1, 0, 0};
-                int DeltaColSteps4[4] = {0, 0, -1, 1};
-                for (int k = 0; k < 4; k++) {
+                int DeltaRowSteps4[] = {0, 0, -1, 1, -1, -1, 1, 1};
+                int DeltaColSteps4[] = {-1, 1, 0, 0, -1, 1, -1, 1};
+                for (int k = 0; k < 8; k++) {
                     int neighborRow = r + DeltaRowSteps4[k];
                     int neighborCol = c + DeltaColSteps4[k];
                     if (neighborRow < 0 || neighborRow >= MAX_ROWS || neighborCol < 0 || neighborCol >= MAX_COLS) continue;

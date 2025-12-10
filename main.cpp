@@ -22,6 +22,8 @@ int main() {
     // 3 = In Game Menu
     // 4 = Settings
     // 5 = View High Score
+    // 6 = Wining Screen
+    // 7 = Losing Screen
     int gameState = 0;
     int prevGameState = 0;
 
@@ -51,8 +53,8 @@ int main() {
     
 
     int score = 0;
-    sf::Text mainText("Score " + IntegerToString(score), ScoreFont, GameFontSize);
-    mainText.setPosition(50, 680);
+    sf::Text mainText("Score " + IntegerToString(score), ScoreFont, 50);
+    mainText.setPosition(50, 600);
     
     sf::Font menuFont;
     menuFont.loadFromFile("./Fonts/Blox2.ttf");
@@ -84,6 +86,7 @@ int main() {
 
     // We'll keep a "current color index" that represents the next shot
     int nextBallColorIndex = rand() % 4;
+
     // Pre-set the BallToShoot textureRect to nextBallColorIndex (so the preview shows it)
     BallToShoot.setTextureRect(sf::IntRect(nextBallColorIndex * 64, 0, 64, 64));
 
@@ -118,8 +121,29 @@ int main() {
     plane_sprite.setOrigin(plane_sprite.getLocalBounds().width / 8, plane_sprite.getLocalBounds().height / 8);
 
     bool MenuErrorNextShoot = false;
+
     bool musicMuted = false;
+
+    //Check txt file for the saved BG Music volume settings
+    std::ifstream MuteMusic("VolumeMusic.txt");
+    int line1;
+    while (MuteMusic >> line1) {
+        if (line1 == 0) musicMuted = true;
+        BgMusic.setVolume(musicMuted ? 0.f : defaultMusicVolume);
+    }
+    MuteMusic.close();
+
     bool sfxMuted = false;
+    //Check txt file for the saved SFX volume settings
+    std::ifstream MuteSFX("VolumeSFX.txt");
+    int line2;
+    while (MuteSFX >> line2) {
+        if (line2 == 0) sfxMuted = true;
+        float newVolume = sfxMuted ? 0.f : defaultSfxVolume;
+        shootSound.setVolume(newVolume);
+        CollisionSound.setVolume(newVolume);
+    }
+    MuteSFX.close();
     int shotsWithoutClear = 0;
 
     // Track if the ball is moving
@@ -142,7 +166,14 @@ int main() {
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) window.close();
         }
+
+        window.clear();
+        window.draw(bg);
+
+        
         if (gameState == 0) {
+            drawMainMenu(window, menuFont);
+            
             if (event.type == sf::Event::MouseButtonPressed) {
 
                 // Play Button
@@ -177,6 +208,15 @@ int main() {
                         prevGameState = gameState;
                         gameState = 1;
                         MenuErrorNextShoot = true;
+
+                        std::ifstream Color("saveColor.txt");
+                        int line1;
+                        while (Color >> line1 && line1 >= 0 && line1 < 4) {
+                            nextBallColorIndex = line1;
+                        }
+                        Color.close();
+                        
+
                         clockMenuError.restart();
                     } 
                     else std::cout << "No savefile found or failed to load" << std::endl;
@@ -189,15 +229,6 @@ int main() {
                     gameState = 2;
                 }
             }
-        }
-
-
-        window.clear();
-        window.draw(bg);
-
-        
-        if (gameState == 0) {
-            drawMainMenu(window, menuFont);
         }
         else if (gameState == 1) {
             // Draw pause button during gameplay
@@ -225,8 +256,7 @@ int main() {
                 if (!sfxMuted) shootSound.play();
                 ballActive = true;
 
-                // Set the ball's initial velocity based on the angle
-                float speed = 0.5f; // Speed of Ball
+                float ballSpeed = 0.5f;
 
                 BallToShoot.setPosition(planePos.x, planePos.y); // Start from the sprite's position
 
@@ -236,8 +266,8 @@ int main() {
                 // Prepare the following shot's color immediately
                 nextBallColorIndex = rand() % 4;
 
-                BallVelocity.x = std::cos(DegreeToRadian(angle)) * speed;
-                BallVelocity.y = std::sin(DegreeToRadian(angle)) * speed;
+                BallVelocity.x = std::cos(DegreeToRadian(angle)) * ballSpeed;
+                BallVelocity.y = std::sin(DegreeToRadian(angle)) * ballSpeed;
             }
             else if (event.type == sf::Event::MouseButtonPressed && MenuErrorNextShoot && clockMenuError.getElapsedTime().asSeconds() > 0.25) MenuErrorNextShoot = false;
 
@@ -288,7 +318,8 @@ int main() {
             if (!ballActive && shotResolvedThisFrame) {
                 if (clearedClusterThisShot) {
                     shotsWithoutClear = 0;
-                } else {
+                } 
+                else {
                     shotsWithoutClear++;
                     if (shotsWithoutClear >= 5) {
                         pushNewRow(bubbleGrid, occupied, BubbleSpriteTop, currentRowCount);
@@ -329,10 +360,14 @@ int main() {
             mainText.setString("Score " + IntegerToString(score));
             window.draw(mainText);
             
-            if (currentRowCount > 8) window.close();
+            if (currentRowCount > 8) {
+                prevGameState = gameState;
+                gameState = 7;
+            }
             else if (currentRowCount == 0) {
                 newHighScore(score);
-                window.close();
+                prevGameState = gameState;
+                gameState = 6;
             }
         }
         else if (gameState == 2) window.close();
@@ -366,6 +401,11 @@ int main() {
                     mousePos.y >= ButtonSaveY && mousePos.y <= ButtonSaveY + buttonHeight) {
                     if (saveGame("SaveFile.txt", bubbleGrid, occupied, score, currentRowCount)) {
                         std::cout << "Game saved to SaveFile.txt" << std::endl;
+
+                        std::ofstream ColorS("saveColor.txt");
+                        ColorS << nextBallColorIndex;
+                        ColorS.close();
+
                     } 
                     else std::cout << "Failed to save game" << std::endl;
                 }
@@ -394,11 +434,21 @@ int main() {
                 }
                 else if (allowToggle && musicToggleBounds().contains(mousePosF)) {
                     musicMuted = !musicMuted;
+                    std::ofstream MuteMusic("VolumeMusic.txt");
+                    if (musicMuted) MuteMusic << 0;
+                    else MuteMusic << 1;
+                    MuteMusic.close();
+
                     BgMusic.setVolume(musicMuted ? 0.f : defaultMusicVolume);
+
                     settingsClickClock.restart();
                 }
                 else if (allowToggle && sfxToggleBounds().contains(mousePosF)) {
                     sfxMuted = !sfxMuted;
+                    std::ofstream MuteSFX("VolumeSFX.txt");
+                    if (sfxMuted) MuteSFX << 0;
+                    else MuteSFX << 1;
+                    MuteSFX.close();
                     float newVolume = sfxMuted ? 0.f : defaultSfxVolume;
                     shootSound.setVolume(newVolume);
                     CollisionSound.setVolume(newVolume);
@@ -417,6 +467,70 @@ int main() {
                     gameState = 0;
                 }
             }   
+        }
+        
+        // Winner screen
+        else if (gameState == 6) {
+            sf::Text title("Winner", menuFont, 50);
+            title.setPosition(570, 100);
+            title.setFillColor(sf::Color::White);
+            window.draw(title);
+            sf::RectangleShape backButton(sf::Vector2f(buttonWidth, buttonHeight));
+            backButton.setPosition((ButtonBackX - buttonWidth), ButtonBackY);
+            backButton.setFillColor(sf::Color(50,50,50,220));
+            backButton.setOutlineColor(sf::Color::White);
+            backButton.setOutlineThickness(2.f);
+            window.draw(backButton);
+
+            //Reset the Grid for the new game aftr winning
+            currentRowCount = 3;
+            score = 0;
+            GridMaker(bubbleGrid, occupied, BubbleSpriteTop);
+
+            sf::Text backMenuText("Back", menuFont, 28);
+            backMenuText.setFillColor(sf::Color::White);
+            backMenuText.setPosition((ButtonBackX - buttonWidth + 20), (ButtonBackY + 16));
+            window.draw(backMenuText);
+
+            if (event.type == sf::Event::MouseButtonPressed) {
+                if (mousePos.x >= ButtonBackX - buttonWidth && mousePos.x <= ButtonBackX &&
+                    mousePos.y >= ButtonBackY && mousePos.y <= ButtonBackY + buttonHeight) {
+                    prevGameState = gameState;
+                    gameState = 0;
+                }
+            }
+        }
+        // Loser screen
+        else if (gameState == 7) {
+            sf::Text title("Loser", menuFont, 50);
+            title.setPosition(570, 100);
+            title.setFillColor(sf::Color::White);
+            window.draw(title);
+
+            sf::RectangleShape backButton(sf::Vector2f(buttonWidth, buttonHeight));
+            backButton.setPosition((ButtonBackX - buttonWidth), ButtonBackY);
+            backButton.setFillColor(sf::Color(50,50,50,220));
+            backButton.setOutlineColor(sf::Color::White);
+            backButton.setOutlineThickness(2.f);
+            window.draw(backButton);
+
+            sf::Text backMenuText("Back", menuFont, 28);
+            backMenuText.setFillColor(sf::Color::White);
+            backMenuText.setPosition((ButtonBackX - buttonWidth + 20), (ButtonBackY + 16));
+            window.draw(backMenuText);
+
+            //Reset the Grid for the new game after losing
+            currentRowCount = 3;
+            score = 0;
+            GridMaker(bubbleGrid, occupied, BubbleSpriteTop);
+
+            if (event.type == sf::Event::MouseButtonPressed) {
+                if (mousePos.x >= ButtonBackX - buttonWidth && mousePos.x <= ButtonBackX &&
+                    mousePos.y >= ButtonBackY && mousePos.y <= ButtonBackY + buttonHeight) {
+                    prevGameState = gameState;
+                    gameState = 0;
+                }
+            }
         }
         window.display();
     }
